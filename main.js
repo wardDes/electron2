@@ -1,8 +1,17 @@
 // Modules to control application life and create native browser window
 const electron = require('electron')
-const {app, BrowserWindow} = electron
+// const {app, BrowserWindow} = electron
+// const Menu =electron.Menu
+
+const {
+  BrowserWindow,
+  Menu,
+  MenuItem,
+  ipcMain,
+  app
+} = require('electron')
+
 const path = require('path')
-const Menu =electron.Menu
 
 const isMac = process.platform === 'darwin'
 
@@ -16,7 +25,7 @@ function createWindow () {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
+      nodeIntegration: true 
     }
   })
 
@@ -94,12 +103,104 @@ let template = [
         role: 'paste'
       },
       {
-        lebel: 'Select All',
+        label: 'Select All',
         accelerator: 'CmdOrCtrl+A',
         role: 'selectAll'
-      }]
+      }
+    ]
+  },
+  {
+    label: 'View',
+    submenu: [
+        {
+          label: 'Reload',
+          accelerator: 'CmdOrCtrl+R',
+          click: function (item, focusedWinndow){
+            if (focusedWinndow){
+              // on reload, start fresh and closde any old
+              // open secondary windows
+              if (focusedWinndow.id === 1) {
+                BrowserWindow.getAllWindows().forEach(function (wind){
+                  if (wind.id > 1){
+                    wind.close()
+                  }
+                })
+              }
+              focusedWinndow.reload()
+            }
+          }
+        },
+        {
+          label: 'Togge Full Screen',
+          accelerator: (function () {
+            if (process.platform === 'darwin'){
+              return 'Ctrl+Command+F'
+            } else {
+              return 'F11'
+            }
+          })(),
+          click: function (item, focusedWinndow) {
+            if(focusedWinndow) {
+              focusedWinndow.setFullScreen(!focusedWinndow.isFullScreen())
+            }
+          }
+        },
+        {
+          label: 'Toggle Developer Tools',
+          accelerator: (function(){
+            if(process.platform === 'darwin'){
+              return 'Alt+Command+I'
+            } else {
+              return 'Ctrl+Shift+I'
+            }
+          })(),
+          click: function (item, focusedWindow){
+            if(focusedWindow){
+              focusedWindow.toggleDevTools()
+            }
+          }
+        }
+    ],
+  },
+  {
+    label: 'Window',
+    role: 'window',
+    submenu: [
+          {
+            label: 'Minimize',
+            accelerator: 'CmdOrCtrl+M',
+            role: 'minimize'
+          },
+          {
+            label: 'Close',
+            accelerator: 'CmdOrCtrl+W',
+            role: 'close'
+          },
+          { type: 'separator' },
+          {
+            label: 'Reopen Window',
+            accelerator: 'CmdOrCtrl+Shift+T',
+            enabled: false,
+            key: 'reopenMenuItem',
+            click: function(){
+              app.emit('activate')
+            }
+          }
+    ]
+  },
+  {
+    label: 'Help',
+    role: 'help',
+    submenu: [
+      {
+        label: 'Learn More',
+        click: function() {
+          electron.shell.openExternal('http:/electron.atom.io')
+        }
+      }
+    ]
   }
-]
+]  
 
 
 // for addjusting menu structure on macOS
@@ -107,15 +208,53 @@ if (process.platform === 'darwin'){
   const name = electron.app.getName()
   template.unshift({
     label: name,
-    submenu: [{
-      label: 'Quit',
-      accelerator: 'Command+Q',
-      click: function() {
-        app.quit()
+    submenu: [
+      {
+        label: 'Quit',
+        accelerator: 'Command+Q',
+        click: function() {
+          app.quit()
+        }
       }
-    }]
+    ]
   })
+
+  template[3].submenu.push(
+    {type: 'separator'},
+    {
+      label: 'Bring All to Front',
+      role: 'front'
+    }
+  )
 }
+
+
+// \v|v/ FOR IMPLEMENTING CONTEXT MENU from main process
+// *****************************************************
+
+
+// Contextual Menu
+// const contextMenu = new Menu()
+// contextMenu.append(new MenuItem({label: 'Cut', role: 'cut'}))
+// contextMenu.append(new MenuItem({label: 'Copy', role: 'copy'}))
+// contextMenu.append(new MenuItem({label: 'Paste', role: 'paste'}))
+// contextMenu.append(new MenuItem({label: 'Select All', role: 'selectAll'}))
+// contextMenu.append(new MenuItem({type: 'separator'}))
+// contextMenu.append(new MenuItem({label: 'Custom', click(){console.log('Custom Menu')}}))
+
+// app.on('browser-window-created', (event, win) => {
+//   win.webContents.on('context-menu', (e, params) => {
+//     contextMenu.popup(win, params.x, params.y)
+//   })
+// })
+
+// ipcMain.on('show-context-menu', function(event){
+//   const win = BrowserWindow.fromWebContents(event.sender)
+//   contextMenu.popup(win)
+// })
+
+// *****************************************************
+// /^|^\ FOR IMPLEMENTING CONTEXT MENU from main process
 
 
 

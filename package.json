@@ -14,6 +14,6 @@
   "author": "Daniel Howard",
   "license": "CC0-1.0",
   "devDependencies": {
-    "electron": "^7.1.3"
+    "electron": "^7.1.4"
   }
 }
